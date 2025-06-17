@@ -1,33 +1,99 @@
 import { useEffect, useState } from 'react';
-import { auth } from '../lib/firebase'; // Adjust the import path as necessary
-import { onAuthStateChanged, signInWithEmailAndPassword, signOut, createUserWithEmailAndPassword } from 'firebase/auth';
+import { User } from 'firebase/auth';
+import { 
+  loginUser, 
+  registerUser, 
+  logoutUser, 
+  onAuthChange,
+  getCurrentUser,
+  getUserProfile,
+  createUserProfile,
+  updateUserProfile
+} from '../services/firebase';
 
-const useAuth = () => {
-    const [user, setUser] = useState(null);
-    const [loading, setLoading] = useState(true);
+interface UserProfile {
+  uid: string;
+  name?: string;
+  email: string;
+  role: 'user' | 'admin';
+  createdAt: Date;
+  [key: string]: any;
+}
 
-    useEffect(() => {
-        const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-            setUser(currentUser);
-            setLoading(false);
-        });
+interface AuthContextType {
+  user: User | null;
+  userProfile: UserProfile | null;
+  loading: boolean;
+  login: (email: string, password: string) => Promise<void>;
+  signup: (email: string, password: string, name: string) => Promise<void>;
+  logout: () => Promise<void>;
+  updateProfile: (data: Partial<UserProfile>) => Promise<void>;
+}
 
-        return () => unsubscribe();
-    }, []);
+const useAuth = (): AuthContextType => {
+  const [user, setUser] = useState<User | null>(getCurrentUser());
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
 
-    const login = async (email, password) => {
-        return await signInWithEmailAndPassword(auth, email, password);
-    };
+  useEffect(() => {
+    const unsubscribe = onAuthChange(async (currentUser) => {
+      setUser(currentUser);
+      
+      if (currentUser) {
+        try {
+          const profile = await getUserProfile(currentUser.uid);
+          setUserProfile(profile as UserProfile);
+        } catch (error) {
+          console.error("Error fetching user profile:", error);
+        }
+      } else {
+        setUserProfile(null);
+      }
+      
+      setLoading(false);
+    });
 
-    const signup = async (email, password) => {
-        return await createUserWithEmailAndPassword(auth, email, password);
-    };
+    return () => unsubscribe();
+  }, []);
 
-    const logout = async () => {
-        return await signOut(auth);
-    };
+  const login = async (email: string, password: string): Promise<void> => {
+    await loginUser(email, password);
+  };
 
-    return { user, loading, login, signup, logout };
+  const signup = async (email: string, password: string, name: string): Promise<void> => {
+    const userCredential = await registerUser(email, password);
+    
+    await createUserProfile(userCredential.user.uid, {
+      name,
+      email,
+      role: 'user',
+    });
+  };
+
+  const logout = async (): Promise<void> => {
+    await logoutUser();
+  };
+
+  const updateProfile = async (data: Partial<UserProfile>): Promise<void> => {
+    if (user) {
+      await updateUserProfile(user.uid, data);
+      
+      // Update local state
+      if (userProfile) {
+        setUserProfile({ ...userProfile, ...data });
+      }
+    }
+  };
+
+  return { 
+    user, 
+    userProfile, 
+    loading, 
+    login, 
+    signup, 
+    logout,
+    updateProfile
+  };
 };
 
 export default useAuth;

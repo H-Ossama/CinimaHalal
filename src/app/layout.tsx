@@ -1,19 +1,24 @@
 import React from 'react';
-import Header from '../components/layout/Header';
-import Footer from '../components/layout/Footer';
-import Sidebar from '../components/layout/Sidebar';
+import './globals.css';
+import ClientLayout from '../components/layout/ClientLayout';
 
-const Layout = ({ children }) => {
-  return (
-    <div className="flex flex-col min-h-screen">
-      <Header />
-      <div className="flex flex-1">
-        <Sidebar />
-        <main className="flex-1 p-4">{children}</main>
-      </div>
-      <Footer />
-    </div>
-  );
+export const metadata = {
+  title: 'CinemaHalal',
+  description: 'Your go-to platform for streaming movies and series with enhanced filtering options',
 };
 
-export default Layout;
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode
+}) {
+  return (
+    <html lang="en">
+      <body>
+        <ClientLayout>
+          {children}
+        </ClientLayout>
+      </body>
+    </html>
+  );
+}

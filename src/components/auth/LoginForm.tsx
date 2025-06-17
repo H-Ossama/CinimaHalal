@@ -1,19 +1,27 @@
 import React, { useState } from 'react';
+import { loginUser } from '../../services/firebase';
+import { useRouter } from 'next/navigation';
 
 const LoginForm = () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
+    const [loading, setLoading] = useState(false);
+    const router = useRouter();
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError('');
+        setLoading(true);
 
         try {
-            // Add your authentication logic here (e.g., Firebase Auth)
-            // await auth.signInWithEmailAndPassword(email, password);
-        } catch (err) {
-            setError('Failed to log in. Please check your credentials.');
+            await loginUser(email, password);
+            // Redirect to home page after successful login
+            router.push('/');
+        } catch (err: any) {
+            setError(err.message || 'Failed to log in. Please check your credentials.');
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -51,10 +59,14 @@ const LoginForm = () => {
                 <div className="flex items-center justify-between">
                     <button
                         type="submit"
-                        className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
+                        className={`bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        disabled={loading}
                     >
-                        Log In
+                        {loading ? 'Logging in...' : 'Log In'}
                     </button>
+                    <a href="/signup" className="inline-block align-baseline font-bold text-sm text-blue-500 hover:text-blue-800">
+                        Create account
+                    </a>
                 </div>
             </form>
         </div>
