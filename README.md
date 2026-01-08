@@ -7,7 +7,6 @@
 
 ---
 
-# CinemaHalal
 *Stream Responsibly, Watch Together.*
 
 CinemaHalal is a professional-grade personal media center and content aggregator designed with family values at its core. It combines a state-of-the-art interface with advanced content filtering to ensure a safe and enjoyable viewing experience for all ages.
