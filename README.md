@@ -13,7 +13,10 @@ CinemaHalal is a professional-grade personal media center and content aggregator
 
 ## 📸 Screenshots
 <p align="center">
-  <img src="screenshots/hero.png" width="45%" title="Home Dashboard" />
+  <img src="screenshots/hero.png" width="491%" title="Home Dashboard" />
+</p>
+<p align="center">
+  <img src="screenshots/watchlist.png" width="45%" title="Personal Watchlist" />
   <img src="screenshots/trending.png" width="45%" title="Discovery Section" />
 </p>
 <p align="center">
@@ -24,9 +27,9 @@ CinemaHalal is a professional-grade personal media center and content aggregator
   <img src="screenshots/details.png" width="45%" title="Content Details" />
   <img src="screenshots/settings.png" width="45%" title="Safety Settings" />
 </p>
-<p align="center">
-  <img src="screenshots/watchlist.png" width="91%" title="Personal Watchlist" />
-</p>
+
+  
+
 
 ## 🚀 Architecture
 CinemaHalal utilizes a **Distributed Media Protocol (DMP)** architecture to provide reliable access to public media repositories while respecting network limitations.
