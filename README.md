@@ -1,60 +1,188 @@
-# CinimaHalal Project
+# CinemaHalal
 
-## Overview
-CinimaHalal is a modern movie and series streaming application built with Next.js and React. It provides a user-friendly interface for streaming content while offering advanced filtering options to enhance the viewing experience.
+A family-friendly movie and TV streaming application with content filtering and reliable torrent streaming.
 
 ## Features
-- **User Authentication**: Sign up and log in using Firebase Auth.
-- **Movie Streaming**: Stream movies with support for subtitles and filtering options.
-- **Automatic Subtitle Fetching**: Automatically download and load Arabic subtitles from OpenSubtitles or Subscene.
-- **Scene Filtering Engine**: Skip, mute, or blur inappropriate content based on user-defined filters.
-- **Movie and Series Metadata**: Fetch detailed information about movies and series from TMDB.
-- **User Ratings and Comments**: Users can rate movies and leave comments.
-- **Responsive Design**: Built with Tailwind CSS for a modern and responsive UI.
 
-## Project Structure
+- 🎬 Browse movies and TV shows from TMDB
+- 👨‍👩‍👧‍👦 Family Mode with content filtering
+- 🔒 Profanity filtering in subtitles
+- 📺 Multiple streaming sources
+- 💾 Watchlist with local storage
+- 🌐 Real subtitles from OpenSubtitles.com
+
+## Streaming Architecture
+
+### Reliable Torrent Streaming
+
+CinemaHalal uses a **hybrid streaming architecture** to ensure reliable playback:
+
+1. **Backend Streaming Server** (Recommended) - Node.js server that bypasses browser limitations
+2. **Browser WebTorrent** (Fallback) - Direct browser streaming via WebRTC
+
+### Why We Need a Backend Server
+
+Browser-based WebTorrent has critical limitations:
+- ❌ DHT doesn't work (browsers can't use UDP)
+- ❌ Most torrents lack WebRTC trackers
+- ❌ Metadata timeout is common
+- ❌ Very few WebRTC-compatible peers
+
+The backend server solves all these problems by using Node.js with full network access.
+
+## Quick Start
+
+### 1. Install the Streaming Server
+
+```bash
+# Run the installer
+install-server.bat
+
+# Or manually:
+cd server
+npm install
 ```
-cinimahalal
-├── src
-│   ├── app
-│   ├── components
-│   ├── lib
-│   ├── hooks
-│   └── services
-├── public
-│   └── assets
-├── .env.local
-├── package.json
-├── next.config.js
-├── tailwind.config.js
-└── postcss.config.js
+
+### 2. Start the Server
+
+```bash
+# Run the start script
+start-server.bat
+
+# Or manually:
+cd server
+npm start
 ```
 
-## Getting Started
-1. **Clone the repository**:
-   ```bash
-   git clone <repository-url>
-   cd clean-stream
-   ```
+The server runs on `http://localhost:3001`
 
-2. **Install dependencies**:
-   ```bash
-   npm install
-   ```
+### 3. Open the Website
 
-3. **Set up environment variables**:
-   Create a `.env.local` file in the root directory and add your Firebase and TMDB API keys.
+Open `index.html` in your browser or use a local server like Live Server.
 
-4. **Run the development server**:
-   ```bash
-   npm run dev
-   ```
+## How It Works
 
-5. **Open your browser**:
-   Navigate to `http://localhost:3000` to view the application.
+```
+┌─────────────────┐     HTTP Range     ┌───────────────────┐
+│   Browser       │◄──────────────────►│  Streaming Server │
+│   Video Player  │    /api/stream     │  (Node.js)        │
+└─────────────────┘                    └─────────┬─────────┘
+                                                 │
+                                                 │ DHT + UDP/TCP
+                                                 │ Trackers
+                                                 ▼
+                                       ┌─────────────────────┐
+                                       │   BitTorrent        │
+                                       │   Swarm             │
+                                       └─────────────────────┘
+```
 
-## Contributing
-Contributions are welcome! Please open an issue or submit a pull request for any enhancements or bug fixes.
+When you click play:
+1. Frontend checks if backend server is available
+2. If yes → Uses backend for reliable streaming
+3. If no → Falls back to browser WebTorrent (less reliable)
+4. If both fail → Switch to embedded servers (VidSrc, etc.)
+
+## API Endpoints (Backend Server)
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/health` | GET | Health check |
+| `/api/search` | GET | Search torrents |
+| `/api/stream` | POST | Prepare stream |
+| `/api/stream/:hash` | GET | Stream video |
+| `/api/stream/:hash/status` | GET | Get status |
+| `/api/stream/:hash` | DELETE | Stop stream |
+
+## Error Handling
+
+The app handles these error states gracefully:
+- `METADATA_TIMEOUT` - No torrent metadata (suggests switching servers)
+- `NO_SEEDS` - No peers available
+- `NO_VIDEO_FILE` - Torrent has no video
+- `STREAM_FAILED` - General streaming error
+
+## Folder Structure
+
+```
+cinima/
+├── index.html          # Main page
+├── movies.html         # Movies catalog
+├── series.html         # TV series catalog
+├── watchlist.html      # User watchlist
+├── search.html         # Search results
+├── install-server.bat  # Server installer
+├── start-server.bat    # Server launcher
+├── css/
+│   └── styles.css      # Styles
+├── js/
+│   └── app.js          # Frontend logic
+└── server/
+    ├── package.json    # Node.js dependencies
+    ├── server.js       # Streaming server
+    └── README.md       # Server documentation
+```
+
+## Requirements
+
+- **Browser**: Chrome, Firefox, Edge, Safari (modern versions)
+- **Node.js**: v18+ (for streaming server)
+- **Network**: Unrestricted access to torrent trackers (some ISPs block them)
+
+## Troubleshooting
+
+### "Metadata timeout" error
+- Start the backend server (`start-server.bat`)
+- Or switch to VidSrc/MultiEmbed server
+
+### Video doesn't play
+- Check if the backend server is running
+- Try a different quality option
+- Switch to an embedded server
+
+### Slow streaming
+- The backend server provides faster streaming
+- Choose torrents with more seeders (shown in quality menu)
 
 ## License
-This project is licensed under the MIT License. See the LICENSE file for details.
+
+MIT
+
+CinemaHalal is a family-friendly streaming application that allows users to browse and watch movies and TV series with content filtering capabilities.
+
+## Features
+
+- **Family Mode**: Filters out adult content, horror, and thriller genres.
+- **Streaming**: Multiple streaming sources including P2P (WebTorrent) and embedded players.
+- **Watchlist**: Keep track of movies and series you want to watch.
+- **Search**: Find movies and TV shows easily.
+- **Responsive Design**: Works on desktop and mobile devices.
+
+## Project Structure
+
+```
+/
+├── css/
+│   └── styles.css       # Application styles
+├── js/
+│   └── app.js           # Application logic
+├── index.html           # Home page
+├── movies.html          # Movies browsing page
+├── series.html          # TV Series browsing page
+├── watchlist.html       # User watchlist page
+└── README.md            # Project documentation
+```
+
+## Setup
+
+1. Clone the repository.
+2. Open `index.html` in your browser.
+3. No build step required (vanilla HTML/CSS/JS).
+
+## Technologies
+
+- HTML5
+- CSS3 (Tailwind CSS via CDN + Custom CSS)
+- JavaScript (ES6+)
+- TMDB API (The Movie Database)
+- WebTorrent (for P2P streaming)

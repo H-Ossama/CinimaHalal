@@ -1,0 +1,1111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CinemaHalal - Stream Responsibly</title>
+
+  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+  <script src="https://cdn.jsdelivr.net/npm/webtorrent@latest/webtorrent.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <!-- Firebase for Google/Facebook Auth -->
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+
+<body class="bg-gray-950 min-h-screen text-white">
+  <!-- Navigation -->
+  <nav class="fixed top-0 left-0 right-0 z-50 bg-gray-900/95 backdrop-blur-md border-b border-gray-800">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex items-center justify-between h-16">
+        <div class="flex items-center gap-2 cursor-pointer" onclick="goHome()">
+          <div class="w-10 h-10 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-lg flex items-center justify-center">
+            <i class="fas fa-play text-white text-lg"></i>
+          </div>
+          <span class="text-xl font-bold bg-gradient-to-r from-emerald-400 to-teal-400 bg-clip-text text-transparent">CinemaHalal</span>
+        </div>
+
+        <div class="hidden md:flex items-center gap-8">
+          <a href="index.html" class="nav-link active" data-section="home">Home</a>
+          <a href="movies.html" class="nav-link" data-section="movies">Movies</a>
+          <a href="series.html" class="nav-link" data-section="series">Series</a>
+          <a href="watchlist.html" class="nav-link" data-section="watchlist">My List</a>
+        </div>
+
+        <div class="flex items-center gap-3">
+          <div class="relative hidden sm:block">
+            <input type="text" id="searchInput" placeholder="Search..." class="w-48 lg:w-64 bg-gray-800 border border-gray-700 rounded-full py-2 px-4 pl-10 text-sm focus:outline-none focus:border-emerald-500 transition" onkeyup="handleSearch(event)">
+            <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
+            <div id="searchResults" class="absolute top-full left-0 right-0 mt-2 bg-gray-800 rounded-xl shadow-2xl border border-gray-700 hidden max-h-96 overflow-y-auto z-50"></div>
+          </div>
+
+          <div class="flex items-center gap-2 bg-gray-800 px-3 py-1.5 rounded-full">
+            <span class="text-xs text-gray-400 hidden sm:inline">Family Mode</span>
+            <div id="familyToggle" onclick="toggleFamilyMode()" class="custom-switch">
+              <span class="custom-switch-dot"></span>
+            </div>
+          </div>
+
+          <button onclick="openSettings()" class="w-9 h-9 bg-gray-800 rounded-full flex items-center justify-center hover:bg-gray-700 transition" title="Settings">
+            <i class="fas fa-cog text-gray-300 text-sm"></i>
+          </button>
+
+          <!-- User Auth Button -->
+          <div id="authButton">
+            <button onclick="openAuthModal()" class="w-9 h-9 bg-gray-800 rounded-full flex items-center justify-center hover:bg-gray-700 transition" title="Sign In">
+              <i class="fas fa-user text-gray-300 text-sm"></i>
+            </button>
+          </div>
+          <div id="userButton" class="hidden">
+            <div class="user-avatar" onclick="toggleUserMenu()">
+              <span id="userInitial">U</span>
+            </div>
+          </div>
+
+          <!-- Mobile Menu Button -->
+          <button onclick="toggleMobileMenu()" class="md:hidden w-10 h-10 flex items-center justify-center text-gray-300 hover:text-white hover:bg-gray-800 rounded-full transition">
+            <i class="fas fa-bars text-xl"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Mobile Menu -->
+    <div id="mobileMenu" class="hidden md:hidden absolute top-16 left-0 right-0 bg-gray-900/95 backdrop-blur-md border-b border-gray-800 shadow-xl transition-all duration-300 origin-top transform scale-y-0 opacity-0" style="transform-origin: top;">
+      <div class="flex flex-col p-4 space-y-2">
+        <a href="index.html" onclick="toggleMobileMenu()" class="mobile-nav-link block px-4 py-3 rounded-lg hover:bg-gray-800 text-gray-300 hover:text-white transition flex items-center gap-3">
+          <i class="fas fa-home w-6 text-center"></i> Home
+        </a>
+        <a href="movies.html" onclick="toggleMobileMenu()" class="mobile-nav-link block px-4 py-3 rounded-lg hover:bg-gray-800 text-gray-300 hover:text-white transition flex items-center gap-3">
+          <i class="fas fa-film w-6 text-center"></i> Movies
+        </a>
+        <a href="series.html" onclick="toggleMobileMenu()" class="mobile-nav-link block px-4 py-3 rounded-lg hover:bg-gray-800 text-gray-300 hover:text-white transition flex items-center gap-3">
+          <i class="fas fa-tv w-6 text-center"></i> Series
+        </a>
+        <a href="watchlist.html" onclick="toggleMobileMenu()" class="mobile-nav-link block px-4 py-3 rounded-lg hover:bg-gray-800 text-gray-300 hover:text-white transition flex items-center gap-3">
+          <i class="fas fa-bookmark w-6 text-center"></i> My List
+        </a>
+        <!-- Mobile Search (visible only on very small screens where header search is hidden) -->
+        <div class="sm:hidden pt-2 border-t border-gray-800 mt-2">
+          <div class="relative">
+            <input type="text" placeholder="Search movies & series..." class="w-full bg-gray-800 border border-gray-700 rounded-lg py-3 px-4 pl-10 text-sm focus:outline-none focus:border-emerald-500 transition" onkeyup="handleSearch(event)">
+            <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- User Dropdown Menu -->
+    <div id="userMenu" class="hidden absolute right-4 top-16 w-64 bg-gray-800 rounded-xl shadow-2xl border border-gray-700 overflow-hidden z-50">
+      <div class="p-4 border-b border-gray-700">
+        <p id="userDisplayName" class="font-semibold">User</p>
+        <p id="userEmail" class="text-sm text-gray-400 truncate">user@example.com</p>
+      </div>
+      <div class="p-2">
+        <button onclick="showSection('watchlist', event); toggleUserMenu();" class="w-full text-left px-4 py-2 hover:bg-gray-700 rounded-lg transition flex items-center gap-3">
+          <i class="fas fa-bookmark text-emerald-500"></i> My Watchlist
+        </button>
+        <button onclick="openSettings(); toggleUserMenu();" class="w-full text-left px-4 py-2 hover:bg-gray-700 rounded-lg transition flex items-center gap-3">
+          <i class="fas fa-cog text-blue-500"></i> Settings
+        </button>
+        <button onclick="signOut()" class="w-full text-left px-4 py-2 hover:bg-gray-700 rounded-lg transition flex items-center gap-3 text-red-400">
+          <i class="fas fa-sign-out-alt"></i> Sign Out
+        </button>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Main Content -->
+  <main class="pt-16" id="mainContent">
+    <!-- HOME SECTION -->
+    <div id="homeSection">
+      <section id="heroSection" class="relative h-[80vh] overflow-hidden">
+        <div id="heroBackground" class="absolute inset-0 bg-cover bg-center transition-all duration-700"></div>
+        <div class="hero-gradient absolute inset-0"></div>
+        <div class="relative z-10 h-full flex items-center">
+          <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
+            <div class="max-w-2xl" id="heroContent"></div>
+          </div>
+        </div>
+        <div class="absolute bottom-8 left-1/2 -translate-x-1/2 flex gap-2" id="heroDots"></div>
+      </section>
+
+      <div id="loadingIndicator" class="py-20 flex flex-col items-center justify-center">
+        <div class="w-16 h-16 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin mb-4"></div>
+        <p class="text-gray-400">Loading content...</p>
+      </div>
+
+      <div id="contentSections" class="hidden">
+        <!-- Trending Movies -->
+        <section class="py-8">
+          <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between mb-6">
+              <h2 class="text-2xl font-bold flex items-center gap-3">
+                <i class="fas fa-fire text-orange-500"></i> Trending Now
+              </h2>
+              <a href="#" onclick="showSection('movies', event); filterByCategory('trending')" class="text-emerald-400 hover:text-emerald-300 text-sm flex items-center gap-1">See All <i class="fas fa-chevron-right text-xs"></i></a>
+            </div>
+            <div class="scroll-container relative">
+              <button class="scroll-btn scroll-left" onclick="scrollContainer(this, -1)"><i class="fas fa-chevron-left"></i></button>
+              <div id="trendingMovies" class="flex gap-4 overflow-x-auto scrollbar-hide pb-4 scroll-smooth"></div>
+              <button class="scroll-btn scroll-right" onclick="scrollContainer(this, 1)"><i class="fas fa-chevron-right"></i></button>
+            </div>
+          </div>
+        </section>
+
+        <!-- Latest Releases -->
+        <section class="py-8 bg-gray-900/50">
+          <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between mb-6">
+              <h2 class="text-2xl font-bold flex items-center gap-3">
+                <i class="fas fa-clock text-blue-500"></i> Latest Releases
+              </h2>
+              <a href="#" onclick="showSection('movies', event); filterByCategory('latest')" class="text-emerald-400 hover:text-emerald-300 text-sm flex items-center gap-1">See All <i class="fas fa-chevron-right text-xs"></i></a>
+            </div>
+            <div class="scroll-container relative">
+              <button class="scroll-btn scroll-left" onclick="scrollContainer(this, -1)"><i class="fas fa-chevron-left"></i></button>
+              <div id="latestMovies" class="flex gap-4 overflow-x-auto scrollbar-hide pb-4 scroll-smooth"></div>
+              <button class="scroll-btn scroll-right" onclick="scrollContainer(this, 1)"><i class="fas fa-chevron-right"></i></button>
+            </div>
+          </div>
+        </section>
+
+        <!-- Top Rated -->
+        <section class="py-8">
+          <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between mb-6">
+              <h2 class="text-2xl font-bold flex items-center gap-3">
+                <i class="fas fa-star text-yellow-500"></i> Top Rated
+              </h2>
+              <a href="#" onclick="showSection('movies', event); filterByCategory('top_rated')" class="text-emerald-400 hover:text-emerald-300 text-sm flex items-center gap-1">See All <i class="fas fa-chevron-right text-xs"></i></a>
+            </div>
+            <div class="scroll-container relative">
+              <button class="scroll-btn scroll-left" onclick="scrollContainer(this, -1)"><i class="fas fa-chevron-left"></i></button>
+              <div id="topRatedMovies" class="flex gap-4 overflow-x-auto scrollbar-hide pb-4 scroll-smooth"></div>
+              <button class="scroll-btn scroll-right" onclick="scrollContainer(this, 1)"><i class="fas fa-chevron-right"></i></button>
+            </div>
+          </div>
+        </section>
+
+        <!-- Action Movies -->
+        <section class="py-8 bg-gradient-to-r from-red-900/20 to-orange-900/20">
+          <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between mb-6">
+              <h2 class="text-2xl font-bold flex items-center gap-3">
+                <i class="fas fa-bolt text-red-500"></i> Action Movies
+              </h2>
+              <a href="#" onclick="showSection('movies', event); filterByGenre(28)" class="text-emerald-400 hover:text-emerald-300 text-sm flex items-center gap-1">See All <i class="fas fa-chevron-right text-xs"></i></a>
+            </div>
+            <div class="scroll-container relative">
+              <button class="scroll-btn scroll-left" onclick="scrollContainer(this, -1)"><i class="fas fa-chevron-left"></i></button>
+              <div id="actionMovies" class="flex gap-4 overflow-x-auto scrollbar-hide pb-4 scroll-smooth"></div>
+              <button class="scroll-btn scroll-right" onclick="scrollContainer(this, 1)"><i class="fas fa-chevron-right"></i></button>
+            </div>
+          </div>
+        </section>
+
+        <!-- Comedy -->
+        <section class="py-8">
+          <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between mb-6">
+              <h2 class="text-2xl font-bold flex items-center gap-3">
+                <i class="fas fa-face-laugh-squint text-yellow-400"></i> Comedy
+              </h2>
+              <a href="#" onclick="showSection('movies', event); filterByGenre(35)" class="text-emerald-400 hover:text-emerald-300 text-sm flex items-center gap-1">See All <i class="fas fa-chevron-right text-xs"></i></a>
+            </div>
+            <div class="scroll-container relative">
+              <button class="scroll-btn scroll-left" onclick="scrollContainer(this, -1)"><i class="fas fa-chevron-left"></i></button>
+              <div id="comedyMovies" class="flex gap-4 overflow-x-auto scrollbar-hide pb-4 scroll-smooth"></div>
+              <button class="scroll-btn scroll-right" onclick="scrollContainer(this, 1)"><i class="fas fa-chevron-right"></i></button>
+            </div>
+          </div>
+        </section>
+
+        <!-- Animation & Family -->
+        <section class="py-8 bg-gradient-to-r from-purple-900/20 to-pink-900/20">
+          <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between mb-6">
+              <h2 class="text-2xl font-bold flex items-center gap-3">
+                <i class="fas fa-wand-magic-sparkles text-purple-500"></i> Animation & Family
+              </h2>
+              <a href="#" onclick="showSection('movies', event); filterByGenre(16)" class="text-emerald-400 hover:text-emerald-300 text-sm flex items-center gap-1">See All <i class="fas fa-chevron-right text-xs"></i></a>
+            </div>
+            <div class="scroll-container relative">
+              <button class="scroll-btn scroll-left" onclick="scrollContainer(this, -1)"><i class="fas fa-chevron-left"></i></button>
+              <div id="animationMovies" class="flex gap-4 overflow-x-auto scrollbar-hide pb-4 scroll-smooth"></div>
+              <button class="scroll-btn scroll-right" onclick="scrollContainer(this, 1)"><i class="fas fa-chevron-right"></i></button>
+            </div>
+          </div>
+        </section>
+
+        <!-- Trending Series -->
+        <section class="py-8">
+          <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between mb-6">
+              <h2 class="text-2xl font-bold flex items-center gap-3">
+                <i class="fas fa-tv text-cyan-500"></i> Trending Series
+              </h2>
+              <a href="series.html" class="text-emerald-400 hover:text-emerald-300 text-sm flex items-center gap-1">See All <i class="fas fa-chevron-right text-xs"></i></a>
+            </div>
+            <div class="scroll-container relative">
+              <button class="scroll-btn scroll-left" onclick="scrollContainer(this, -1)"><i class="fas fa-chevron-left"></i></button>
+              <div id="trendingSeries" class="flex gap-4 overflow-x-auto scrollbar-hide pb-4 scroll-smooth"></div>
+              <button class="scroll-btn scroll-right" onclick="scrollContainer(this, 1)"><i class="fas fa-chevron-right"></i></button>
+            </div>
+          </div>
+        </section>
+
+        <!-- Top Rated Series -->
+        <section class="py-8 bg-gray-900/50">
+          <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between mb-6">
+              <h2 class="text-2xl font-bold flex items-center gap-3">
+                <i class="fas fa-crown text-amber-500"></i> Top Rated Series
+              </h2>
+              <a href="series.html" class="text-emerald-400 hover:text-emerald-300 text-sm flex items-center gap-1">See All <i class="fas fa-chevron-right text-xs"></i></a>
+            </div>
+            <div class="scroll-container relative">
+              <button class="scroll-btn scroll-left" onclick="scrollContainer(this, -1)"><i class="fas fa-chevron-left"></i></button>
+              <div id="topRatedSeries" class="flex gap-4 overflow-x-auto scrollbar-hide pb-4 scroll-smooth"></div>
+              <button class="scroll-btn scroll-right" onclick="scrollContainer(this, 1)"><i class="fas fa-chevron-right"></i></button>
+            </div>
+          </div>
+        </section>
+      </div>
+    </div>
+
+    <!-- MOVIES PAGE -->
+    <div id="moviesSection" class="hidden py-8">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+          <h1 class="text-3xl font-bold flex items-center gap-3">
+            <i class="fas fa-film text-emerald-500"></i> Movies
+            <span id="moviesCount" class="text-lg text-gray-400 font-normal"></span>
+          </h1>
+          <div class="flex flex-wrap gap-3">
+            <select id="movieCategoryFilter" onchange="applyMovieFilters()" class="bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-sm focus:outline-none focus:border-emerald-500">
+              <option value="popular">Popular</option>
+              <option value="trending">Trending</option>
+              <option value="latest">Latest Releases</option>
+              <option value="top_rated">Top Rated</option>
+              <option value="upcoming">Upcoming</option>
+            </select>
+            <select id="movieGenreFilter" onchange="applyMovieFilters()" class="bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-sm focus:outline-none focus:border-emerald-500">
+              <option value="">All Genres</option>
+              <option value="28">Action</option>
+              <option value="12">Adventure</option>
+              <option value="16">Animation</option>
+              <option value="35">Comedy</option>
+              <option value="80">Crime</option>
+              <option value="99">Documentary</option>
+              <option value="18">Drama</option>
+              <option value="10751">Family</option>
+              <option value="14">Fantasy</option>
+              <option value="36">History</option>
+              <option value="27">Horror</option>
+              <option value="10402">Music</option>
+              <option value="9648">Mystery</option>
+              <option value="10749">Romance</option>
+              <option value="878">Science Fiction</option>
+              <option value="53">Thriller</option>
+              <option value="10752">War</option>
+              <option value="37">Western</option>
+            </select>
+            <select id="movieYearFilter" onchange="applyMovieFilters()" class="bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-sm focus:outline-none focus:border-emerald-500">
+              <option value="">All Years</option>
+              <option value="2025">2025</option>
+              <option value="2024">2024</option>
+              <option value="2023">2023</option>
+              <option value="2022">2022</option>
+              <option value="2021">2021</option>
+              <option value="2020">2020</option>
+            </select>
+          </div>
+        </div>
+        <div id="moviesGrid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4"></div>
+        <div id="moviesLoading" class="hidden py-8 text-center">
+          <div class="w-10 h-10 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
+        </div>
+        <div class="text-center mt-8">
+          <button id="loadMoreMovies" onclick="loadMoreMovies()" class="bg-emerald-600 hover:bg-emerald-700 px-8 py-3 rounded-full font-semibold transition">Load More Movies</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- SERIES PAGE -->
+    <div id="seriesSection" class="hidden py-8">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+          <h1 class="text-3xl font-bold flex items-center gap-3">
+            <i class="fas fa-tv text-purple-500"></i> TV Series
+            <span id="seriesCount" class="text-lg text-gray-400 font-normal"></span>
+          </h1>
+          <div class="flex flex-wrap gap-3">
+            <select id="seriesCategoryFilter" onchange="applySeriesFilters()" class="bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-sm focus:outline-none focus:border-emerald-500">
+              <option value="popular">Popular</option>
+              <option value="trending">Trending</option>
+              <option value="top_rated">Top Rated</option>
+              <option value="on_the_air">On The Air</option>
+              <option value="airing_today">Airing Today</option>
+            </select>
+            <select id="seriesGenreFilter" onchange="applySeriesFilters()" class="bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-sm focus:outline-none focus:border-emerald-500">
+              <option value="">All Genres</option>
+              <option value="10759">Action & Adventure</option>
+              <option value="16">Animation</option>
+              <option value="35">Comedy</option>
+              <option value="80">Crime</option>
+              <option value="99">Documentary</option>
+              <option value="18">Drama</option>
+              <option value="10751">Family</option>
+              <option value="10762">Kids</option>
+              <option value="9648">Mystery</option>
+              <option value="10765">Sci-Fi & Fantasy</option>
+            </select>
+          </div>
+        </div>
+        <div id="seriesGrid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4"></div>
+        <div id="seriesLoading" class="hidden py-8 text-center">
+          <div class="w-10 h-10 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
+        </div>
+        <div class="text-center mt-8">
+          <button id="loadMoreSeries" onclick="loadMoreSeries()" class="bg-purple-600 hover:bg-purple-700 px-8 py-3 rounded-full font-semibold transition">Load More Series</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- WATCHLIST PAGE -->
+    <div id="watchlistSection" class="hidden py-8">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <h1 class="text-3xl font-bold flex items-center gap-3 mb-8">
+          <i class="fas fa-bookmark text-emerald-500"></i> My Watchlist
+          <span id="watchlistCount" class="text-lg text-gray-400 font-normal"></span>
+        </h1>
+        <div id="watchlistGrid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4"></div>
+        <div id="emptyWatchlist" class="hidden text-center py-20">
+          <i class="fas fa-bookmark text-6xl text-gray-600 mb-4"></i>
+          <p class="text-gray-400 text-xl">Your watchlist is empty</p>
+          <p class="text-gray-500 mt-2">Start adding movies and series you want to watch!</p>
+          <button href="movies.html" class="mt-6 bg-emerald-600 hover:bg-emerald-700 px-6 py-3 rounded-full font-semibold transition">Browse Movies</button>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer class="bg-gray-900 border-t border-gray-800 py-12 mt-12">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-8">
+        <div>
+          <div class="flex items-center gap-2 mb-4">
+            <div class="w-10 h-10 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-lg flex items-center justify-center">
+              <i class="fas fa-play text-white"></i>
+            </div>
+            <span class="text-xl font-bold">CinemaHalal</span>
+          </div>
+          <p class="text-gray-400 text-sm">Stream responsibly with family-friendly content filters.</p>
+        </div>
+        <div>
+          <h4 class="font-semibold mb-4">Browse</h4>
+          <ul class="space-y-2 text-gray-400 text-sm">
+            <li><a href="movies.html" class="hover:text-emerald-400 transition">Movies</a></li>
+            <li><a href="series.html" class="hover:text-emerald-400 transition">Series</a></li>
+            <li><a href="watchlist.html" class="hover:text-emerald-400 transition">My List</a></li>
+          </ul>
+        </div>
+        <div>
+          <h4 class="font-semibold mb-4">Account</h4>
+          <ul class="space-y-2 text-gray-400 text-sm">
+            <li><a href="#" onclick="openAuthModal()" class="hover:text-emerald-400 transition">Sign In</a></li>
+            <li><a href="#" onclick="openSettings()" class="hover:text-emerald-400 transition">Settings</a></li>
+          </ul>
+        </div>
+        <div>
+          <h4 class="font-semibold mb-4">Connect</h4>
+          <div class="flex gap-4">
+            <a href="#" class="w-10 h-10 bg-gray-800 rounded-full flex items-center justify-center hover:bg-emerald-500 transition"><i class="fab fa-facebook-f"></i></a>
+            <a href="#" class="w-10 h-10 bg-gray-800 rounded-full flex items-center justify-center hover:bg-emerald-500 transition"><i class="fab fa-twitter"></i></a>
+            <a href="#" class="w-10 h-10 bg-gray-800 rounded-full flex items-center justify-center hover:bg-emerald-500 transition"><i class="fab fa-instagram"></i></a>
+          </div>
+        </div>
+      </div>
+      <div class="border-t border-gray-800 mt-8 pt-8 text-center text-gray-500 text-sm">
+        <p>&copy; 2025 CinemaHalal. All rights reserved.</p>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Auth Modal -->
+  <div id="authModal" class="fixed inset-0 z-50 hidden">
+    <div class="modal-backdrop fixed inset-0 bg-black/80" onclick="closeAuthModal()"></div>
+    <div class="fixed inset-0 flex items-center justify-center p-4">
+      <div class="relative z-10 w-full max-w-md bg-gray-900 rounded-2xl overflow-hidden shadow-2xl">
+        <button onclick="closeAuthModal()" class="absolute top-4 right-4 z-20 w-10 h-10 bg-gray-800 rounded-full flex items-center justify-center hover:bg-gray-700 transition">
+          <i class="fas fa-times"></i>
+        </button>
+        
+        <div class="p-8">
+          <div class="text-center mb-8">
+            <div class="w-16 h-16 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
+              <i class="fas fa-play text-white text-2xl"></i>
+            </div>
+            <h2 class="text-2xl font-bold">Welcome to CinemaHalal</h2>
+            <p class="text-gray-400 mt-2">Sign in to sync your watchlist across devices</p>
+          </div>
+
+          <!-- Sign In / Sign Up Toggle -->
+          <div class="flex bg-gray-800 rounded-xl p-1 mb-6">
+            <button id="signInTab" onclick="switchAuthTab('signin')" class="flex-1 py-2 rounded-lg font-semibold transition bg-emerald-500">Sign In</button>
+            <button id="signUpTab" onclick="switchAuthTab('signup')" class="flex-1 py-2 rounded-lg font-semibold transition text-gray-400">Sign Up</button>
+          </div>
+
+          <!-- Social Auth -->
+          <div class="space-y-3 mb-6">
+            <button onclick="signInWithGoogle()" class="auth-btn auth-google">
+              <svg class="w-5 h-5" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+              Continue with Google
+            </button>
+            <button onclick="signInWithFacebook()" class="auth-btn auth-facebook">
+              <i class="fab fa-facebook-f text-lg"></i>
+              Continue with Facebook
+            </button>
+          </div>
+
+          <div class="flex items-center gap-4 mb-6">
+            <div class="flex-1 h-px bg-gray-700"></div>
+            <span class="text-gray-500 text-sm">or</span>
+            <div class="flex-1 h-px bg-gray-700"></div>
+          </div>
+
+          <!-- Email Auth Form -->
+          <form id="authForm" onsubmit="handleEmailAuth(event)">
+            <div id="signUpNameField" class="hidden mb-4">
+              <label class="block text-sm text-gray-400 mb-2">Full Name</label>
+              <input type="text" id="authName" autocomplete="name" class="w-full bg-gray-800 border border-gray-700 rounded-xl py-3 px-4 focus:outline-none focus:border-emerald-500 transition" placeholder="Your name">
+            </div>
+            <div class="mb-4">
+              <label class="block text-sm text-gray-400 mb-2">Email</label>
+              <input type="email" id="authEmail" autocomplete="username" class="w-full bg-gray-800 border border-gray-700 rounded-xl py-3 px-4 focus:outline-none focus:border-emerald-500 transition" placeholder="you@example.com" required>
+            </div>
+            <div class="mb-6">
+              <label class="block text-sm text-gray-400 mb-2">Password</label>
+              <input type="password" id="authPassword" autocomplete="current-password" class="w-full bg-gray-800 border border-gray-700 rounded-xl py-3 px-4 focus:outline-none focus:border-emerald-500 transition" placeholder="••••••••" required minlength="6">
+            </div>
+            <button type="submit" class="w-full bg-emerald-500 hover:bg-emerald-600 py-3 rounded-xl font-semibold transition">
+              <span id="authSubmitText">Sign In</span>
+            </button>
+          </form>
+
+          <p class="text-center text-gray-500 text-sm mt-6">
+            By continuing, you agree to our Terms of Service and Privacy Policy
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Movie Detail Modal -->
+  <div id="detailModal" class="fixed inset-0 z-50 hidden" style="display: none;">
+    <div class="modal-backdrop fixed inset-0 bg-black/90" onclick="closeModal()"></div>
+    <div class="fixed inset-0 overflow-y-auto">
+      <div class="flex min-h-full items-start justify-center p-4">
+        <div class="relative z-10 w-full max-w-5xl bg-gray-900 rounded-2xl overflow-hidden shadow-2xl my-8">
+          <button onclick="closeModal()" class="absolute top-4 right-4 z-20 w-10 h-10 bg-gray-800/80 rounded-full flex items-center justify-center hover:bg-gray-700 transition">
+            <i class="fas fa-times"></i>
+          </button>
+          <div id="modalContent"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Video Player Modal -->
+  <div id="playerModal" class="fixed inset-0 z-[60] hidden bg-black" style="display: none;">
+    <div class="relative w-full h-full flex flex-col">
+      <!-- Top Bar -->
+      <div id="playerTopBar" class="flex-shrink-0 bg-gradient-to-b from-black/90 to-transparent p-4 absolute top-0 left-0 right-0 z-30 transition-opacity duration-300">
+        <div class="flex items-center justify-between gap-4 max-w-7xl mx-auto">
+          <div class="flex items-center gap-4 min-w-0">
+            <button onclick="closePlayer()" class="flex-shrink-0 w-10 h-10 bg-white/10 backdrop-blur rounded-full flex items-center justify-center hover:bg-white/20 transition">
+              <i class="fas fa-arrow-left"></i>
+            </button>
+            <div class="min-w-0">
+              <h3 id="playerTitle" class="font-semibold text-lg truncate"></h3>
+              <p id="playerSubtitle" class="text-sm text-gray-300"></p>
+            </div>
+          </div>
+          <div class="flex items-center gap-2">
+            <button onclick="togglePiP()" class="w-10 h-10 bg-white/10 backdrop-blur rounded-full flex items-center justify-center hover:bg-white/20 transition" title="Picture in Picture">
+              <i class="fas fa-external-link-alt"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Main Video Container -->
+      <div id="videoContainer" class="flex-1 relative bg-black" onmousemove="showPlayerControls()" onclick="handleVideoClick(event)">
+        
+        <!-- Custom HTML5 Video Player -->
+        <div id="customPlayerWrapper" class="absolute inset-0 hidden bg-black flex items-center justify-center">
+          <video id="customVideo" class="w-full h-full object-contain" playsinline>
+            Your browser does not support the video tag.
+          </video>
+          
+          <!-- Subtitle Overlay -->
+          <div id="subtitleOverlay" class="absolute bottom-32 left-0 right-0 text-center pointer-events-none z-20 px-4">
+            <span id="subtitleText" class="inline-block bg-black/60 backdrop-blur-sm px-6 py-3 rounded-xl text-white text-2xl font-medium shadow-lg max-w-4xl leading-relaxed"></span>
+          </div>
+        </div>
+        
+        <!-- Embedded Player Frame -->
+        <div id="embedPlayerWrapper" class="absolute inset-0">
+          <iframe id="videoFrame" class="w-full h-full border-0" allowfullscreen allow="autoplay; encrypted-media; fullscreen; picture-in-picture"></iframe>
+          
+          <!-- Subtitle Overlay for Embedded Players - positioned higher to not block controls -->
+          <div id="embedSubtitleOverlay" class="absolute bottom-4 left-0 right-0 text-center pointer-events-none z-10 px-4">
+            <span id="embedSubtitleText" class="inline-block bg-black/80 px-4 py-2 rounded-lg text-white text-xl max-w-4xl"></span>
+          </div>
+        </div>
+
+        <!-- Loading Indicator -->
+        <div id="videoLoading" class="absolute inset-0 flex flex-col items-center justify-center bg-gray-950 z-20">
+          <div class="w-16 h-16 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin mb-4"></div>
+          <p class="text-gray-400">Loading stream...</p>
+          <p class="text-gray-500 text-sm mt-2">Try another server if this doesn't load</p>
+        </div>
+
+        <!-- Stream Error (shown when a server fails) -->
+        <div id="streamError" class="absolute inset-0 hidden flex flex-col items-center justify-center bg-gray-950/95 z-20 p-6 text-center">
+          <div class="w-14 h-14 rounded-full bg-red-500/15 border border-red-500/30 flex items-center justify-center mb-4">
+            <i class="fas fa-exclamation-triangle text-red-400 text-2xl"></i>
+          </div>
+          <h4 id="streamErrorTitle" class="text-xl font-bold mb-2">Streaming error</h4>
+          <p id="streamErrorDetails" class="text-gray-400 max-w-xl">This streaming server is unavailable right now.</p>
+          <p class="text-gray-500 text-sm mt-4">Open DevTools Console to see the detailed error log.</p>
+        </div>
+
+        <!-- Filter Warning Banner -->
+        <div id="filterWarning" class="absolute top-4 left-1/2 -translate-x-1/2 bg-yellow-500/90 text-black px-6 py-3 rounded-lg z-40 hidden max-w-md text-center shadow-lg backdrop-blur-sm">
+          <div class="flex items-center gap-3 mb-1">
+            <i class="fas fa-exclamation-triangle text-xl"></i>
+            <span class="font-bold">Filters Not Active</span>
+          </div>
+          <p class="text-sm font-medium leading-tight">
+            This server does not support family filters (skipping scenes/muting). 
+            <button onclick="changeSource('webtorrent')" class="underline font-bold hover:text-white transition">Switch to Family Safe Server</button> to enable protection.
+          </p>
+          <button onclick="document.getElementById('filterWarning').classList.add('hidden')" class="absolute top-1 right-1 w-6 h-6 flex items-center justify-center hover:bg-black/10 rounded-full">
+            <i class="fas fa-times text-xs"></i>
+          </button>
+        </div>
+
+        <!-- Play Button Overlay -->
+        <div id="playButtonOverlay" class="absolute inset-0 flex items-center justify-center z-15 hidden">
+          <button onclick="togglePlayPause()" class="w-20 h-20 bg-emerald-500/90 rounded-full flex items-center justify-center hover:bg-emerald-500 transition transform hover:scale-110">
+            <i class="fas fa-play text-3xl ml-1"></i>
+          </button>
+        </div>
+
+        <!-- Custom Player Controls -->
+        <div id="playerControls" class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black via-black/80 to-transparent pt-24 pb-8 px-6 z-30 transition-opacity duration-300 hidden">
+          <div class="max-w-4xl mx-auto bg-gray-900/60 backdrop-blur-md rounded-2xl p-5 border border-white/10 shadow-2xl ring-1 ring-white/5">
+            
+            <!-- Progress Bar -->
+            <div class="flex items-center gap-4 mb-4 group/progress">
+              <span id="currentTime" class="text-xs font-medium text-gray-300 w-10 text-right font-mono">0:00</span>
+              <div class="flex-1 h-2 bg-white/10 rounded-full cursor-pointer relative overflow-visible" onclick="seekVideo(event)" id="progressBar">
+                <div id="progressBuffered" class="absolute inset-y-0 left-0 bg-white/20 rounded-full transition-all duration-300"></div>
+                <div id="progressPlayed" class="absolute inset-y-0 left-0 bg-emerald-500 rounded-full shadow-[0_0_10px_rgba(16,185,129,0.5)] relative" style="width: 0%">
+                    <div class="absolute right-0 top-1/2 -translate-y-1/2 w-4 h-4 bg-white rounded-full shadow-md scale-0 group-hover/progress:scale-100 transition-transform duration-200"></div>
+                </div>
+              </div>
+              <span id="duration" class="text-xs font-medium text-gray-300 w-10 font-mono">0:00</span>
+            </div>
+
+            <!-- Control Buttons -->
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-4">
+                <!-- Play/Pause -->
+                <button onclick="togglePlayPause()" class="w-12 h-12 flex items-center justify-center bg-white/10 hover:bg-white/20 rounded-full transition text-white hover:scale-105 active:scale-95">
+                  <i id="playPauseIcon" class="fas fa-play text-xl ml-1"></i>
+                </button>
+                
+                <!-- Skip Controls -->
+                <div class="flex items-center gap-2">
+                    <button onclick="skipVideo(-10)" class="w-10 h-10 flex items-center justify-center hover:bg-white/10 rounded-full transition text-gray-300 hover:text-white" title="Back 10s">
+                    <i class="fas fa-rotate-left"></i>
+                    </button>
+                    <button onclick="skipVideo(10)" class="w-10 h-10 flex items-center justify-center hover:bg-white/10 rounded-full transition text-gray-300 hover:text-white" title="Forward 10s">
+                    <i class="fas fa-rotate-right"></i>
+                    </button>
+                </div>
+
+                <!-- Volume -->
+                <div class="flex items-center gap-3 ml-2 group/volume">
+                  <button onclick="toggleMute()" class="w-10 h-10 flex items-center justify-center hover:bg-white/10 rounded-full transition text-gray-300 hover:text-white">
+                    <i id="volumeIcon" class="fas fa-volume-up"></i>
+                  </button>
+                  <div class="w-0 overflow-hidden group-hover/volume:w-24 transition-all duration-300 ease-out">
+                      <input type="range" id="volumeSlider" min="0" max="1" step="0.1" value="1" class="w-20 h-1.5 bg-white/20 rounded-lg appearance-none cursor-pointer accent-emerald-500">
+                  </div>
+                </div>
+              </div>
+
+              <div class="flex items-center gap-3">
+                <!-- Playback Speed -->
+                <div class="relative">
+                  <button onclick="toggleSpeedMenu()" class="h-9 px-3 flex items-center justify-center hover:bg-white/10 rounded-lg transition gap-2 text-sm font-medium text-gray-300 hover:text-white">
+                    <i class="fas fa-gauge-high"></i>
+                    <span id="speedLabel">1x</span>
+                  </button>
+                  <div id="speedMenu" class="absolute bottom-full right-0 mb-3 bg-gray-900/95 backdrop-blur border border-gray-700 rounded-xl shadow-xl overflow-hidden hidden min-w-[120px] py-1">
+                    <button onclick="setPlaybackSpeed(0.5)" class="block w-full px-4 py-2 text-left hover:bg-white/10 text-sm text-gray-300 hover:text-white transition">0.5x</button>
+                    <button onclick="setPlaybackSpeed(0.75)" class="block w-full px-4 py-2 text-left hover:bg-white/10 text-sm text-gray-300 hover:text-white transition">0.75x</button>
+                    <button onclick="setPlaybackSpeed(1)" class="block w-full px-4 py-2 text-left hover:bg-white/10 text-sm text-emerald-400 font-medium transition">1x (Normal)</button>
+                    <button onclick="setPlaybackSpeed(1.25)" class="block w-full px-4 py-2 text-left hover:bg-white/10 text-sm text-gray-300 hover:text-white transition">1.25x</button>
+                    <button onclick="setPlaybackSpeed(1.5)" class="block w-full px-4 py-2 text-left hover:bg-white/10 text-sm text-gray-300 hover:text-white transition">1.5x</button>
+                    <button onclick="setPlaybackSpeed(2)" class="block w-full px-4 py-2 text-left hover:bg-white/10 text-sm text-gray-300 hover:text-white transition">2x</button>
+                  </div>
+                </div>
+
+                <!-- Quality -->
+                <div class="relative">
+                  <button onclick="toggleQualityMenu()" class="h-9 px-3 flex items-center justify-center hover:bg-white/10 rounded-lg transition gap-2 text-sm font-medium text-gray-300 hover:text-white">
+                    <i class="fas fa-sliders-h"></i>
+                    <span id="qualityLabel">Quality</span>
+                  </button>
+                  <div id="qualityMenu" class="absolute bottom-full right-0 mb-3 bg-gray-900/95 backdrop-blur border border-gray-700 rounded-xl shadow-xl overflow-hidden hidden min-w-[160px] py-1 z-50 max-h-60 overflow-y-auto">
+                    <!-- Populated by JS -->
+                  </div>
+                </div>
+
+                <!-- Subtitles -->
+                <button onclick="openSubtitleSelector()" class="h-9 px-3 flex items-center justify-center hover:bg-white/10 rounded-lg transition gap-2 text-sm font-medium text-gray-300 hover:text-white">
+                  <i class="fas fa-closed-captioning"></i>
+                  <span>Subtitles</span>
+                </button>
+
+                <!-- Fullscreen -->
+                <button onclick="toggleFullscreen()" class="w-10 h-10 flex items-center justify-center hover:bg-white/10 rounded-full transition text-gray-300 hover:text-white hover:scale-110">
+                  <i id="fullscreenIcon" class="fas fa-expand"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Server Selection Bar -->
+      <div id="serverBar" class="flex-shrink-0 bg-gray-900/95 backdrop-blur border-t border-gray-800 py-3">
+        <div class="max-w-7xl mx-auto px-4">
+          <div class="flex flex-col sm:flex-row sm:items-center gap-3">
+            <span class="text-gray-400 text-sm font-medium flex-shrink-0">
+              <i class="fas fa-server mr-2"></i>Select Server:
+            </span>
+            <div id="serverTabs" class="flex gap-2 overflow-x-auto scrollbar-hide pb-1 flex-1">
+              <!-- Servers will be added here -->
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Subtitle Control Bar (removed) -->
+
+
+      <!-- Episode Selector (for TV shows) -->
+      <div id="episodeSelector" class="flex-shrink-0 bg-gray-900 border-t border-gray-800 hidden">
+        <div class="max-w-7xl mx-auto p-4">
+          <div class="flex items-center gap-4 mb-3">
+            <select id="seasonSelect" onchange="loadSeasonEpisodes(this.value)" class="bg-gray-800 border border-gray-600 rounded-lg px-4 py-2 focus:outline-none focus:border-emerald-500"></select>
+            <span class="text-gray-400 text-sm" id="episodeCount"></span>
+          </div>
+          <div id="episodeList" class="flex gap-3 overflow-x-auto pb-2 scrollbar-hide"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Subtitle Selector Modal -->
+  <div id="subtitleSelectorModal" class="fixed inset-0 z-[70] hidden">
+    <div class="modal-backdrop fixed inset-0 bg-black/80" onclick="closeSubtitleSelector()"></div>
+    <div class="fixed inset-0 flex items-center justify-center p-4">
+      <div class="relative z-10 w-full max-w-lg bg-gray-900 rounded-2xl overflow-hidden shadow-2xl max-h-[80vh] flex flex-col">
+        <div class="p-6 border-b border-gray-800">
+          <div class="flex items-center justify-between">
+            <h3 class="text-xl font-bold flex items-center gap-2">
+              <i class="fas fa-closed-captioning text-emerald-500"></i> Select Subtitle Language
+            </h3>
+            <button onclick="closeSubtitleSelector()" class="w-8 h-8 bg-gray-800 rounded-full flex items-center justify-center hover:bg-gray-700">
+              <i class="fas fa-times"></i>
+            </button>
+          </div>
+          <p class="text-gray-400 text-sm mt-2">Subtitles are fetched from OpenSubtitles.com and displayed over the video player</p>
+          <div id="subtitleLoadingIndicator" class="hidden mt-3 flex items-center gap-2 text-emerald-400">
+            <div class="w-4 h-4 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin"></div>
+            <span class="text-sm">Searching OpenSubtitles.com...</span>
+          </div>
+          
+          <!-- Search subtitles -->
+          <div class="mt-4 relative">
+            <input type="text" id="subtitleSearch" placeholder="Search language..." class="w-full bg-gray-800 border border-gray-700 rounded-lg py-2 px-4 pl-10 text-sm focus:outline-none focus:border-emerald-500" onkeyup="filterSubtitleLanguages()">
+            <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
+          </div>
+        </div>
+        
+        <div class="flex-1 overflow-y-auto p-4">
+          <div id="subtitleLanguageGrid" class="grid grid-cols-2 gap-2">
+            <!-- Languages will be populated here -->
+          </div>
+        </div>
+        
+        <div class="p-4 border-t border-gray-800 bg-gray-900/50">
+          <div class="flex items-center gap-3">
+            <label class="flex items-center gap-2 cursor-pointer text-sm">
+              <input type="checkbox" id="subtitleProfanityCheck" class="w-4 h-4 rounded border-gray-600 bg-gray-800 text-emerald-500">
+              <span class="text-gray-300">Enable profanity filter</span>
+            </label>
+            <button onclick="openSubtitleSettings()" class="ml-auto text-emerald-400 text-sm hover:text-emerald-300">
+              <i class="fas fa-cog mr-1"></i> Settings
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Subtitle Settings Modal -->
+  <div id="subtitleSettingsModal" class="fixed inset-0 z-[70] hidden">
+    <div class="modal-backdrop fixed inset-0 bg-black/80" onclick="closeSubtitleSettings()"></div>
+    <div class="fixed inset-0 flex items-center justify-center p-4">
+      <div class="relative z-10 w-full max-w-md bg-gray-900 rounded-2xl overflow-hidden shadow-2xl">
+        <div class="p-6">
+          <div class="flex items-center justify-between mb-6">
+            <h3 class="text-xl font-bold flex items-center gap-2">
+              <i class="fas fa-closed-captioning text-emerald-500"></i> Subtitle Settings
+            </h3>
+            <button onclick="closeSubtitleSettings()" class="w-8 h-8 bg-gray-800 rounded-full flex items-center justify-center hover:bg-gray-700">
+              <i class="fas fa-times"></i>
+            </button>
+          </div>
+
+          <div class="space-y-4">
+            <!-- Font Size -->
+            <div>
+              <label class="block text-sm text-gray-400 mb-2">Font Size</label>
+              <div class="flex items-center gap-4">
+                <input type="range" id="subtitleFontSize" min="14" max="32" value="20" class="flex-1 accent-emerald-500" onchange="updateSubtitleStyle()">
+                <span id="fontSizeValue" class="text-sm w-12 text-right">20px</span>
+              </div>
+            </div>
+
+            <!-- Background Opacity -->
+            <div>
+              <label class="block text-sm text-gray-400 mb-2">Background Opacity</label>
+              <div class="flex items-center gap-4">
+                <input type="range" id="subtitleBgOpacity" min="0" max="100" value="80" class="flex-1 accent-emerald-500" onchange="updateSubtitleStyle()">
+                <span id="bgOpacityValue" class="text-sm w-12 text-right">80%</span>
+              </div>
+            </div>
+
+            <!-- Text Color -->
+            <div>
+              <label class="block text-sm text-gray-400 mb-2">Text Color</label>
+              <div class="flex gap-2">
+                <button onclick="setSubtitleColor('white')" class="w-10 h-10 bg-white rounded-lg border-2 border-gray-600 hover:border-emerald-500"></button>
+                <button onclick="setSubtitleColor('yellow')" class="w-10 h-10 bg-yellow-400 rounded-lg border-2 border-gray-600 hover:border-emerald-500"></button>
+                <button onclick="setSubtitleColor('cyan')" class="w-10 h-10 bg-cyan-400 rounded-lg border-2 border-gray-600 hover:border-emerald-500"></button>
+                <button onclick="setSubtitleColor('lime')" class="w-10 h-10 bg-lime-400 rounded-lg border-2 border-gray-600 hover:border-emerald-500"></button>
+              </div>
+            </div>
+
+            <!-- Profanity Filter -->
+            <div>
+              <label class="flex items-center gap-3 cursor-pointer">
+                <input type="checkbox" id="profanityFilter" onchange="saveProfanityFilter()" class="w-5 h-5 rounded border-gray-600 bg-gray-800 text-emerald-500 focus:ring-emerald-500">
+                <div>
+                  <span class="font-medium">Profanity Filter</span>
+                  <p class="text-gray-500 text-xs">Censor bad words in subtitles with ***</p>
+                </div>
+              </label>
+            </div>
+
+            <!-- Sync Adjustment (for embedded players) -->
+            <div id="syncAdjustmentSection">
+              <label class="block text-sm text-gray-400 mb-2">Subtitle Sync Adjustment</label>
+              <div class="flex items-center gap-2">
+                <button onclick="adjustSubtitleSync(-1)" class="px-3 py-2 bg-gray-800 rounded-lg hover:bg-gray-700">-1s</button>
+                <button onclick="adjustSubtitleSync(-0.5)" class="px-3 py-2 bg-gray-800 rounded-lg hover:bg-gray-700">-0.5s</button>
+                <span id="syncValueDisplay" class="flex-1 text-center text-emerald-400 font-mono">0.0s</span>
+                <button onclick="adjustSubtitleSync(0.5)" class="px-3 py-2 bg-gray-800 rounded-lg hover:bg-gray-700">+0.5s</button>
+                <button onclick="adjustSubtitleSync(1)" class="px-3 py-2 bg-gray-800 rounded-lg hover:bg-gray-700">+1s</button>
+              </div>
+              <p class="text-xs text-gray-500 mt-2">Adjust if subtitles are out of sync with the video</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Settings Modal -->
+  <div id="settingsModal" class="fixed inset-0 z-50 hidden">
+    <div class="modal-backdrop fixed inset-0 bg-black/80" onclick="closeSettings()"></div>
+    <div class="fixed inset-0 flex items-center justify-center p-4">
+      <div class="relative z-10 w-full max-w-4xl bg-gray-900 rounded-2xl overflow-hidden shadow-2xl flex flex-col md:flex-row max-h-[90vh]">
+        <!-- Sidebar -->
+        <div class="w-full md:w-64 bg-gray-800/50 border-r border-gray-800 p-4 space-y-2">
+          <div class="flex items-center justify-between mb-8 px-2">
+            <h2 class="text-xl font-bold flex items-center gap-2">
+              <i class="fas fa-cog text-emerald-500"></i> Settings
+            </h2>
+            <button onclick="closeSettings()" class="md:hidden w-8 h-8 bg-gray-700 rounded-full flex items-center justify-center">
+              <i class="fas fa-times text-xs"></i>
+            </button>
+          </div>
+          
+          <button onclick="switchSettingsTab('general')" class="settings-nav-item active" id="tab-general">
+            <i class="fas fa-shield-alt w-5 text-center"></i> Safety & General
+          </button>
+          <button onclick="switchSettingsTab('content')" class="settings-nav-item" id="tab-content">
+            <i class="fas fa-filter w-5 text-center"></i> Content Filtering
+          </button>
+          <button onclick="switchSettingsTab('playback')" class="settings-nav-item" id="tab-playback">
+            <i class="fas fa-play-circle w-5 text-center"></i> Playback
+          </button>
+          <button onclick="switchSettingsTab('subtitles')" class="settings-nav-item" id="tab-subtitles">
+            <i class="fas fa-closed-captioning w-5 text-center"></i> Subtitles
+          </button>
+          <button onclick="switchSettingsTab('info')" class="settings-nav-item" id="tab-info">
+            <i class="fas fa-info-circle w-5 text-center"></i> Help & Info
+          </button>
+          
+          <div class="flex-1"></div>
+          
+          <button onclick="closeSettings()" class="hidden md:flex w-full mt-auto items-center gap-2 px-4 py-3 text-gray-400 hover:text-white transition">
+            <i class="fas fa-arrow-left"></i> Back to Cine
+          </button>
+        </div>
+
+        <!-- Content Area -->
+        <div class="flex-1 overflow-y-auto p-4 md:p-8 custom-scrollbar">
+          <!-- General Section -->
+          <div id="section-general" class="settings-section-content space-y-6">
+            <h3 class="text-2xl font-bold mb-6">Safety & General</h3>
+            
+            <div class="bg-emerald-500/10 border border-emerald-500/20 rounded-2xl p-6">
+              <div class="flex items-center justify-between gap-4">
+                <div>
+                  <h4 class="text-lg font-bold text-white mb-1">Family Mode</h4>
+                  <p class="text-gray-400 text-sm">Hides adult content, horror, thriller and explicit themes app-wide.</p>
+                </div>
+                <div id="settingsFamilyToggle" onclick="toggleFamilyMode()" class="custom-switch">
+                  <span class="custom-switch-dot"></span>
+                </div>
+              </div>
+            </div>
+
+            <div class="space-y-4">
+              <h4 class="settings-group-title">App Preferences</h4>
+              <div class="flex items-center justify-between p-4 bg-gray-800/50 rounded-xl border border-gray-800">
+                <div>
+                  <p class="font-medium">Auto-Play Next Episode</p>
+                  <p class="text-xs text-gray-500">Automatically start the next episode of a series</p>
+                </div>
+                <div class="custom-switch active">
+                  <span class="custom-switch-dot"></span>
+                </div>
+              </div>
+              <div class="flex items-center justify-between p-4 bg-gray-800/50 rounded-xl border border-gray-800">
+                <div>
+                  <p class="font-medium">High Quality Backdrops</p>
+                  <p class="text-xs text-gray-500">Show high resolution images in home section</p>
+                </div>
+                <div class="custom-switch active">
+                  <span class="custom-switch-dot"></span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Content Filtering Section -->
+          <div id="section-content" class="settings-section-content hidden space-y-6">
+            <h3 class="text-2xl font-bold mb-6">Content Filtering</h3>
+            
+            <div class="space-y-4">
+              <div class="p-4 bg-gray-800/50 rounded-xl border border-gray-800">
+                <label class="flex items-start gap-4 cursor-pointer">
+                  <input type="checkbox" id="cfHideAdult" onchange="saveSettings()" class="w-5 h-5 mt-1 accent-emerald-500">
+                  <div>
+                    <p class="font-medium">Block Adult (18+) Content</p>
+                    <p class="text-xs text-gray-500">Uses TMDB data to filter out explicit movies and shows</p>
+                  </div>
+                </label>
+              </div>
+              
+              <div class="p-4 bg-gray-800/50 rounded-xl border border-gray-800">
+                <label class="flex items-start gap-4 cursor-pointer">
+                  <input type="checkbox" id="cfHideHorror" onchange="saveSettings()" class="w-5 h-5 mt-1 accent-emerald-500">
+                  <div>
+                    <p class="font-medium">Block Horror & Thriller</p>
+                    <p class="text-xs text-gray-500">Hides scary and suspenseful content</p>
+                  </div>
+                </label>
+              </div>
+
+              <div class="p-4 bg-gray-800/50 rounded-xl border border-gray-800">
+                <label class="flex items-start gap-4 cursor-pointer">
+                  <input type="checkbox" id="cfHideCrime" onchange="saveSettings()" class="w-5 h-5 mt-1 accent-emerald-500">
+                  <div>
+                    <p class="font-medium">Block Crime & Violence</p>
+                    <p class="text-xs text-gray-500">Hides content with heavy focus on criminal activities</p>
+                  </div>
+                </label>
+              </div>
+
+              <div class="p-6 bg-gray-800/50 rounded-2xl border border-gray-800 space-y-4">
+                <div class="flex items-center justify-between">
+                  <p class="font-medium">Minimum Community Rating</p>
+                  <span id="minRatingLabel" class="bg-emerald-500/20 text-emerald-400 px-2 py-1 rounded-lg text-sm font-bold">0/10</span>
+                </div>
+                <input type="range" id="cfMinRating" min="0" max="9" step="0.5" value="0" onchange="saveSettings()" oninput="updateRatingLabel()" class="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-emerald-500">
+                <p class="text-xs text-gray-500">Only show movies and series that people generally enjoyed.</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Playback Section -->
+          <div id="section-playback" class="settings-section-content hidden space-y-6">
+            <h3 class="text-2xl font-bold mb-6">Playback Settings</h3>
+            
+            <div class="space-y-6">
+              <div class="space-y-3">
+                <label class="font-medium text-sm text-gray-400 block ml-1">Default Streaming Server</label>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div class="relative">
+                    <select id="defaultServer" onchange="saveSettings()" class="w-full bg-gray-800 border border-gray-700 rounded-xl py-3 px-4 focus:outline-none focus:border-emerald-500 appearance-none">
+                      <option value="webtorrent">CinimaHalal Server (Family Safe)</option>
+                      <option value="vidsrc">VidSrc.to (Recommended)</option>
+                      <option value="vidsrc2">VidSrc.xyz</option>
+                      <option value="embed">2Embed</option>
+                      <option value="multiembed">MultiEmbed</option>
+                    </select>
+                    <i class="fas fa-chevron-down absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none"></i>
+                  </div>
+                </div>
+                <p class="text-xs text-gray-500">Safe servers support automatic scene skipping and audio muting.</p>
+              </div>
+
+              <div class="p-4 bg-blue-500/10 border border-blue-500/20 rounded-xl">
+                <div class="flex gap-3">
+                  <i class="fas fa-info-circle text-blue-400 mt-1"></i>
+                  <p class="text-sm text-gray-300">VidSrc is the fastest, but "CinimaHalal Server" offers the best protection for kids.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Subtitles Section -->
+          <div id="section-subtitles" class="settings-section-content hidden space-y-6">
+            <h3 class="text-2xl font-bold mb-6">Subtitle Appearance</h3>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div class="space-y-4">
+                <div>
+                  <label class="text-sm text-gray-400 block mb-3">Preferred Language</label>
+                  <select id="defaultSubtitle" onchange="saveSettings()" class="w-full bg-gray-800 border border-gray-700 rounded-xl py-3 px-4 focus:outline-none focus:border-emerald-500">
+                    <option value="off">🚫 Off</option>
+                    <option value="en">🇺🇸 English</option>
+                    <option value="ar">🇸🇦 Arabic</option>
+                    <option value="fr">🇫🇷 French</option>
+                    <option value="es">🇪🇸 Spanish</option>
+                  </select>
+                </div>
+
+                <div class="p-4 bg-gray-800/50 rounded-xl border border-gray-800">
+                  <label class="flex items-start gap-4 cursor-pointer">
+                    <input type="checkbox" id="settingsProfanityFilter" onchange="saveSettings()" class="w-5 h-5 mt-1 accent-emerald-500">
+                    <div>
+                      <p class="font-medium">Profanity Filter</p>
+                      <p class="text-xs text-gray-500">Censors bad words in subtitles with ***</p>
+                    </div>
+                  </label>
+                </div>
+              </div>
+
+              <div class="space-y-4">
+                <div class="p-5 bg-gray-800/50 rounded-xl border border-gray-800 space-y-4">
+                  <div class="flex justify-between">
+                    <span class="text-sm font-medium">Font Size</span>
+                    <span id="settingsFontSizeVal" class="text-emerald-400 font-bold">20px</span>
+                  </div>
+                  <input type="range" id="settingsSubFontSize" min="14" max="32" value="20" onchange="saveSubtitleSettings()" class="w-full h-1.5 bg-gray-700 rounded-lg accent-emerald-500">
+                  
+                  <div class="flex justify-between mt-4">
+                    <span class="text-sm font-medium">BG Opacity</span>
+                    <span id="settingsBgOpacityVal" class="text-emerald-400 font-bold">80%</span>
+                  </div>
+                  <input type="range" id="settingsSubBgOpacity" min="0" max="100" value="80" onchange="saveSubtitleSettings()" class="w-full h-1.5 bg-gray-700 rounded-lg accent-emerald-500">
+                </div>
+              </div>
+            </div>
+
+            <div class="p-6 bg-black/40 rounded-2xl border border-gray-800 flex flex-col items-center justify-center text-center">
+              <p class="text-gray-500 text-xs mb-4 uppercase font-bold tracking-widest">Preview</p>
+              <div class="bg-black/60 backdrop-blur-md px-6 py-3 rounded-xl inline-block">
+                <span class="text-2xl font-medium" id="subtitlePreviewText">Example Subtitle Text</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Help Section -->
+          <div id="section-info" class="settings-section-content hidden space-y-6">
+            <h3 class="text-2xl font-bold mb-6">About CinemaHalal</h3>
+            
+            <div class="space-y-4">
+              <div class="p-4 bg-gray-800/50 rounded-xl border border-gray-800">
+                <h4 class="font-bold flex items-center gap-2 mb-2">
+                  <i class="fas fa-hand-holding-heart text-pink-500"></i> The Mission
+                </h4>
+                <p class="text-sm text-gray-400">CinemaHalal was built to provide a clean streaming experience for families. We use community data to skip inappropriate scenes and filter explicit content automatically.</p>
+              </div>
+
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div class="p-4 bg-gray-800/30 rounded-xl border border-gray-800">
+                  <p class="text-xs text-gray-500 mb-1">Version</p>
+                  <p class="font-mono text-sm">1.4.2-stable</p>
+                </div>
+                <div class="p-4 bg-gray-800/30 rounded-xl border border-gray-800">
+                  <p class="text-xs text-gray-500 mb-1">Source Code</p>
+                  <a href="#" class="text-emerald-400 text-sm hover:underline">GitHub Repository</a>
+                </div>
+              </div>
+
+              <div class="p-4 bg-yellow-500/5 border border-yellow-500/10 rounded-xl">
+                <p class="text-xs text-yellow-500/70 font-bold uppercase mb-2">Notice</p>
+                <p class="text-xs text-gray-500 italic">This app does not host any media files. It functions as a specialized browser for content available elsewhere on the internet.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div id="toast" class="fixed bottom-4 right-4 bg-gray-800 border border-gray-700 rounded-xl px-6 py-4 shadow-2xl transform translate-y-20 opacity-0 transition-all duration-300 z-[70]">
+    <div class="flex items-center gap-3">
+      <i id="toastIcon" class="fas fa-check-circle text-emerald-500 text-xl"></i>
+      <p id="toastMessage">Message</p>
+    </div>
+  </div>
+
+  <script src="js/app.js"></script>
+</body>
+</html>
+
+
+
+
