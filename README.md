@@ -1,3 +1,12 @@
+<p align="center">
+  <img src="img\icon.png" width="150" alt="CinemaHalal Logo">
+</p>
+
+<h1 align="center">CinemaHalal</h1>
+
+
+---
+
 # CinemaHalal
 *Stream Responsibly, Watch Together.*
 
